@@ -1,8 +1,8 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "E-commerce API",
-    "description": "Complete API documentation for e-commerce application",
+    "title": "Banking API",
+    "description": "Complete API documentation for banking application",
     "version": "1.0.0"
   },
   "host": "localhost:5000",
@@ -26,10 +26,11 @@
                 "password": { "type": "string", "example": "password123" },
                 "role": {
                   "type": "string",
-                  "enum": ["CUSTOMER", "ADMIN"],
-                  "example": "CUSTOMER"
+                  "enum": ["USER", "ADMIN"],
+                  "example": "USER"
                 }
-              }
+              },
+              "required": ["name", "email", "password"]
             }
           }
         ],
@@ -51,11 +52,18 @@
                         "role": { "type": "string" }
                       }
                     },
-                    "accessToken": { "type": "string" }
+                    "accessToken": { "type": "string" },
+                    "refreshToken": { "type": "string" }
                   }
                 },
                 "message": { "type": "string" }
               }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
             }
           }
         }
@@ -75,13 +83,42 @@
               "properties": {
                 "email": { "type": "string", "example": "john@example.com" },
                 "password": { "type": "string", "example": "password123" }
-              }
+              },
+              "required": ["email", "password"]
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "User logged in successfully"
+            "description": "User logged in successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "name": { "type": "string" },
+                        "email": { "type": "string" },
+                        "role": { "type": "string" }
+                      }
+                    },
+                    "accessToken": { "type": "string" },
+                    "refreshToken": { "type": "string" }
+                  }
+                },
+                "message": { "type": "string" }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
           }
         }
       }
@@ -93,7 +130,22 @@
         "security": [{ "BearerAuth": [] }],
         "responses": {
           "200": {
-            "description": "User profile retrieved successfully"
+            "description": "User profile retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "$ref": "#/definitions/User"
+                },
+                "message": { "type": "string" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
           }
         }
       },
@@ -110,17 +162,31 @@
               "type": "object",
               "properties": {
                 "name": { "type": "string", "example": "John Doe Updated" },
-                "email": {
-                  "type": "string",
-                  "example": "john.updated@example.com"
-                }
+                "email": { "type": "string", "example": "john.updated@example.com" },
+                "password": { "type": "string", "example": "newpassword123" },
+                "role": { "type": "string", "enum": ["USER", "ADMIN"] }
               }
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "User profile updated successfully"
+            "description": "User profile updated successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "$ref": "#/definitions/User"
+                },
+                "message": { "type": "string" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
           }
         }
       }
@@ -132,472 +198,506 @@
         "security": [{ "BearerAuth": [] }],
         "responses": {
           "200": {
-            "description": "User logged out successfully"
-          }
-        }
-      }
-    },
-    "/products": {
-      "post": {
-        "tags": ["Products"],
-        "summary": "Create a new product",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          {
-            "in": "body",
-            "name": "body",
-            "required": true,
-            "schema": {
-              "type": "object",
-              "properties": {
-                "name": { "type": "string", "example": "iPhone 13" },
-                "description": {
-                  "type": "string",
-                  "example": "Latest iPhone model"
-                },
-                "price": { "type": "number", "example": 999.99 },
-                "category": { "type": "string", "example": "Electronics" },
-                "stockQuantity": { "type": "number", "example": 100 },
-                "images": {
-                  "type": "array",
-                  "items": { "type": "string" },
-                  "example": ["image1.jpg", "image2.jpg"]
-                }
-              }
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Product created successfully"
-          }
-        }
-      },
-      "get": {
-        "tags": ["Products"],
-        "summary": "Get all products",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "search",
-            "type": "string",
-            "description": "Search term"
-          },
-          {
-            "in": "query",
-            "name": "category",
-            "type": "string",
-            "description": "Category filter"
-          },
-          {
-            "in": "query",
-            "name": "priceMin",
-            "type": "number",
-            "description": "Minimum price"
-          },
-          {
-            "in": "query",
-            "name": "priceMax",
-            "type": "number",
-            "description": "Maximum price"
-          },
-          {
-            "in": "query",
-            "name": "page",
-            "type": "number",
-            "description": "Page number"
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "type": "number",
-            "description": "Items per page"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Products retrieved successfully"
-          }
-        }
-      }
-    },
-    "/products/{productId}": {
-      "get": {
-        "tags": ["Products"],
-        "summary": "Get product by ID",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "productId",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Product retrieved successfully"
-          }
-        }
-      },
-      "put": {
-        "tags": ["Products"],
-        "summary": "Update product",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "productId",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "in": "body",
-            "name": "body",
-            "required": true,
-            "schema": {
-              "type": "object",
-              "properties": {
-                "name": { "type": "string" },
-                "description": { "type": "string" },
-                "price": { "type": "number" },
-                "category": { "type": "string" },
-                "stockQuantity": { "type": "number" },
-                "images": {
-                  "type": "array",
-                  "items": { "type": "string" }
-                }
-              }
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Product updated successfully"
-          }
-        }
-      },
-      "delete": {
-        "tags": ["Products"],
-        "summary": "Delete product",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "productId",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Product deleted successfully"
-          }
-        }
-      }
-    },
-    "/orders/create": {
-      "post": {
-        "tags": ["Orders"],
-        "summary": "Create a new order",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          {
-            "in": "body",
-            "name": "body",
-            "required": true,
-            "schema": {
-              "type": "object",
-              "properties": {
-                "items": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "productId": { "type": "string" },
-                      "quantity": { "type": "number" },
-                      "price": { "type": "number" }
-                    }
-                  }
-                },
-                "totalAmount": { "type": "number" },
-                "shippingAddress": { "type": "string" }
-              }
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Order created successfully"
-          }
-        }
-      }
-    },
-    "/orders": {
-      "get": {
-        "tags": ["Orders"],
-        "summary": "Get all orders",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "Orders retrieved successfully"
-          }
-        }
-      }
-    },
-    "/orders/{id}": {
-      "get": {
-        "tags": ["Orders"],
-        "summary": "Get order by ID",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Order retrieved successfully"
-          }
-        }
-      },
-      "delete": {
-        "tags": ["Orders"],
-        "summary": "Delete order",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Order deleted successfully"
-          }
-        }
-      }
-    },
-    "/orders/update-status/{id}": {
-      "put": {
-        "tags": ["Orders"],
-        "summary": "Update order status",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "in": "body",
-            "name": "body",
-            "required": true,
-            "schema": {
-              "type": "object",
-              "properties": {
-                "status": {
-                  "type": "string",
-                  "enum": ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"],
-                  "example": "SHIPPED"
-                }
-              }
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Order status updated successfully"
-          }
-        }
-      }
-    },
-    "/orders/status/{id}": {
-      "get": {
-        "tags": ["Orders"],
-        "summary": "Get order status",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Order status retrieved successfully"
-          }
-        }
-      }
-    },
-    "/cart": {
-      "get": {
-        "tags": ["Cart"],
-        "summary": "Get user's cart",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "Cart retrieved successfully"
-          }
-        }
-      }
-    },
-    "/cart/add-to-cart": {
-      "post": {
-        "tags": ["Cart"],
-        "summary": "Add item to cart",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          {
-            "in": "body",
-            "name": "body",
-            "required": true,
-            "schema": {
-              "type": "object",
-              "properties": {
-                "productId": { "type": "string", "example": "123" },
-                "quantity": { "type": "number", "example": 1 }
-              }
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Item added to cart successfully"
-          }
-        }
-      }
-    },
-    "/cart/remove/{productId}": {
-      "delete": {
-        "tags": ["Cart"],
-        "summary": "Remove item from cart",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "productId",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Item removed from cart successfully"
-          }
-        }
-      }
-    },
-    "/cart/update/{productId}": {
-      "put": {
-        "tags": ["Cart"],
-        "summary": "Update item quantity in cart",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "productId",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "in": "body",
-            "name": "body",
-            "required": true,
-            "schema": {
-              "type": "object",
-              "properties": {
-                "quantity": { "type": "number", "example": 2 }
-              }
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Item quantity updated successfully"
-          }
-        }
-      }
-    },
-    "/cart/view-cart": {
-      "get": {
-        "tags": ["Cart"],
-        "summary": "View cart contents",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "Cart contents retrieved successfully"
-          }
-        }
-      }
-    },
-    "/cart/clear-cart": {
-      "delete": {
-        "tags": ["Cart"],
-        "summary": "Clear cart",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "Cart cleared successfully"
-          }
-        }
-      }
-    },
-    "/payment": {
-      "post": {
-        "tags": ["Payments"],
-        "summary": "Process payment",
-        "parameters": [
-          {
-            "in": "body",
-            "name": "body",
-            "required": true,
-            "schema": {
-              "type": "object",
-              "properties": {
-                "amount": { "type": "number", "example": 999.99 },
-                "cardNumber": {
-                  "type": "string",
-                  "example": "4111111111111111"
-                },
-                "expiryDate": { "type": "string", "example": "12/25" },
-                "cvv": { "type": "string", "example": "123" }
-              }
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Payment processed successfully",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "data": {
-                  "type": "object",
-                  "properties": {
-                    "transactionId": { "type": "string" },
-                    "status": { "type": "string" }
-                  }
-                },
-                "message": { "type": "string" }
-              }
-            }
-          },
-          "400": {
-            "description": "Payment failed",
+            "description": "User logged out successfully",
             "schema": {
               "type": "object",
               "properties": {
                 "data": { "type": "null" },
                 "message": { "type": "string" }
               }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/users/forgot-password": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Request password reset",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": { "type": "string", "example": "john@example.com" }
+              },
+              "required": ["email"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reset password email sent",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": { "type": "null" },
+                "message": { "type": "string" }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/users/reset-password": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Reset password",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "token": { "type": "string", "example": "reset-token-here" },
+                "newPassword": { "type": "string", "example": "newpassword123" }
+              },
+              "required": ["token", "newPassword"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Password reset successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": { "type": "null" },
+                "message": { "type": "string" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired reset token",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/users/change-password": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Change password",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "currentPassword": { "type": "string", "example": "oldpassword123" },
+                "newPassword": { "type": "string", "example": "newpassword123" }
+              },
+              "required": ["currentPassword", "newPassword"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Password changed successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": { "type": "null" },
+                "message": { "type": "string" }
+              }
+            }
+          },
+          "400": {
+            "description": "Current password is incorrect",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/users/refresh-token": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Refresh access token",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "refreshToken": { "type": "string", "example": "refresh-token-here" }
+              },
+              "required": ["refreshToken"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tokens refreshed successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "accessToken": { "type": "string" },
+                "refreshToken": { "type": "string" }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired refresh token",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/users/admin/all": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get all users (Admin only)",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Users retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/User"
+                  }
+                },
+                "message": { "type": "string" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "403": {
+            "description": "Forbidden (Admin access required)",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/transactions/request": {
+      "post": {
+        "tags": ["Transactions"],
+        "summary": "Create a new transaction",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreateTransactionDTO"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Transaction created successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "$ref": "#/definitions/Transaction"
+                },
+                "message": { "type": "string" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (e.g., insufficient balance)",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/transactions/my-transactions": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "Get user's transactions",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Transactions retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Transaction"
+                  }
+                },
+                "message": { "type": "string" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/transactions/stats": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "Get transaction statistics",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Transaction statistics retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "_id": { "type": "string" },
+                      "count": { "type": "number" },
+                      "totalAmount": { "type": "number" }
+                    }
+                  }
+                },
+                "message": { "type": "string" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/transactions/{id}": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "Get transaction by ID",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "type": "string",
+            "description": "Transaction ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "$ref": "#/definitions/Transaction"
+                },
+                "message": { "type": "string" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Transaction not found",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/transactions/admin/all": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "Get all transactions (Admin only)",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "All transactions retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Transaction"
+                  }
+                },
+                "message": { "type": "string" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "403": {
+            "description": "Forbidden (Admin access required)",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/transactions/admin/pending": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "Get pending transactions (Admin only)",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Pending transactions retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Transaction"
+                  }
+                },
+                "message": { "type": "string" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "403": {
+            "description": "Forbidden (Admin access required)",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/transactions/{id}/approve": {
+      "put": {
+        "tags": ["Transactions"],
+        "summary": "Approve/reject transaction (Admin only)",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "type": "string",
+            "description": "Transaction ID"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ApproveTransactionDTO"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction updated successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "$ref": "#/definitions/Transaction"
+                },
+                "message": { "type": "string" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (e.g., transaction already processed)",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "403": {
+            "description": "Forbidden (Admin access required)",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Transaction not found",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
             }
           }
         }
@@ -621,98 +721,68 @@
         "email": { "type": "string" },
         "role": { "type": "string", "enum": ["USER", "ADMIN"] },
         "active": { "type": "boolean" },
+        "balance": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       }
     },
-    "Product": {
+    "Transaction": {
       "type": "object",
       "properties": {
         "_id": { "type": "string" },
-        "name": { "type": "string" },
-        "description": { "type": "string" },
-        "price": { "type": "number" },
-        "category": { "type": "string" },
-        "stockQuantity": { "type": "number" },
-        "images": {
-          "type": "array",
-          "items": { "type": "string" }
+        "fromId": { "type": "string" },
+        "toId": { "type": "string" },
+        "amount": { "type": "number" },
+        "type": {
+          "type": "string",
+          "enum": ["transfer", "deposit", "withdrawal", "payment"]
         },
-        "isActive": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" }
-      }
-    },
-    "Order": {
-      "type": "object",
-      "properties": {
-        "_id": { "type": "string" },
-        "user": { "type": "string" },
-        "items": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "productId": { "type": "string" },
-              "quantity": { "type": "number" },
-              "price": { "type": "number" }
-            }
-          }
-        },
-        "totalAmount": { "type": "number" },
         "status": {
           "type": "string",
-          "enum": ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"]
+          "enum": ["pending", "approved", "rejected", "completed"]
         },
-        "shippingAddress": { "type": "string" },
-        "deliveryDate": { "type": "string", "format": "date-time" },
+        "isInternational": { "type": "boolean" },
+        "commission": { "type": "number" },
+        "description": { "type": "string" },
+        "processedBy": { "type": "string" },
+        "processedAt": { "type": "string", "format": "date-time" },
+        "remarks": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       }
     },
-    "Cart": {
+    "CreateTransactionDTO": {
       "type": "object",
       "properties": {
-        "_id": { "type": "string" },
-        "userId": { "type": "string" },
-        "items": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "productId": { "type": "string" },
-              "quantity": { "type": "number" },
-              "productName": { "type": "string" },
-              "productPrice": { "type": "number" },
-              "totalItemPrice": { "type": "number" }
-            }
-          }
+        "toId": { "type": "string", "example": "507f1f77bcf86cd799439011" },
+        "amount": { "type": "number", "example": 100.5 },
+        "type": {
+          "type": "string",
+          "enum": ["transfer", "deposit", "withdrawal", "payment"],
+          "example": "transfer"
         },
-        "totalPrice": { "type": "number" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" }
-      }
-    }
-  },
-  "responses": {
-    "UnauthorizedError": {
-      "description": "Authentication information is missing or invalid",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "data": { "type": "null" },
-          "message": { "type": "string", "example": "User not authenticated" }
-        }
-      }
+        "description": { "type": "string", "example": "Monthly rent payment" },
+        "isInternational": { "type": "boolean", "example": false }
+      },
+      "required": ["toId", "amount", "type"]
     },
-    "ValidationError": {
-      "description": "Invalid input parameters",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "data": { "type": "null" },
-          "message": { "type": "string" }
-        }
+    "ApproveTransactionDTO": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["approved", "rejected", "completed"],
+          "example": "approved"
+        },
+        "remarks": { "type": "string", "example": "Payment verified" }
+      },
+      "required": ["status"]
+    },
+    "ErrorResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "type": "null" },
+        "message": { "type": "string" }
       }
     }
   },
@@ -722,20 +792,8 @@
       "description": "User management endpoints"
     },
     {
-      "name": "Products",
-      "description": "Product management endpoints"
-    },
-    {
-      "name": "Orders",
-      "description": "Order management endpoints"
-    },
-    {
-      "name": "Cart",
-      "description": "Shopping cart management endpoints"
-    },
-    {
-      "name": "Payments",
-      "description": "Payment processing endpoints"
+      "name": "Transactions",
+      "description": "Transaction management endpoints"
     }
   ]
 }
