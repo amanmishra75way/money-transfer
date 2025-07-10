@@ -3,6 +3,7 @@ import * as userController from "./user.controller";
 import * as userValidation from "./user.validation";
 import { authMiddleware } from "../common/middleware/auth.middleware";
 import { catchError } from "../common/middleware/cath-error.middleware";
+import { isAdmin } from "../common/middleware/admin.middleware";
 
 const router = Router();
 
@@ -29,5 +30,12 @@ router.post(
 );
 
 router.post("/refresh-token", userController.refreshTokenHandler);
+router.get(
+  "/admin/all",
+  authMiddleware,
+  isAdmin, // Add this middleware to ensure only admins can access
+  catchError,
+  userController.getAllUsersHandler
+);
 
 export default router;

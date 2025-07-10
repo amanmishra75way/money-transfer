@@ -4,6 +4,7 @@ import { Add as DepositIcon, Pending as PendingIcon } from "@mui/icons-material"
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import { useRequestTransactionMutation } from "../../services/api";
 
 const depositSchema = yup.object().shape({
   amount: yup
@@ -13,7 +14,8 @@ const depositSchema = yup.object().shape({
     .required("Amount is required"),
 });
 
-const DepositTab = ({ currentUserData, dispatch, requestTransaction }) => {
+const DepositTab = ({ currentUserData }) => {
+  const [requestTransaction] = useRequestTransactionMutation();
   const {
     register,
     handleSubmit,
@@ -28,19 +30,21 @@ const DepositTab = ({ currentUserData, dispatch, requestTransaction }) => {
 
   const formatCurrency = (amount) => `$${parseFloat(amount).toFixed(2)}`;
 
-  const handleDeposit = (data) => {
-    const amount = parseFloat(data.amount);
-    dispatch(
-      requestTransaction({
-        fromId: "external",
-        toId: currentUserData.id,
+  const handleDeposit = async (data) => {
+    try {
+      const amount = parseFloat(data.amount);
+      await requestTransaction({
+        toId: currentUserData._id, // Add the current user's ID as recipient
         amount,
         type: "deposit",
         isInternational: false,
-      })
-    );
-    reset();
-    alert("Deposit request submitted for admin approval!");
+      }).unwrap();
+      reset();
+      alert("Deposit request submitted for admin approval!");
+    } catch (error) {
+      console.error("Deposit failed:", error);
+      alert("Deposit failed: " + (error.data?.message || "Unknown error"));
+    }
   };
 
   return (

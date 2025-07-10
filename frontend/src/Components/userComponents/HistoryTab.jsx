@@ -40,7 +40,7 @@ const HistoryTab = ({ currentUserData, userTransactions, getRecipientName }) => 
           {userTransactions.length > 0 ? (
             <List>
               {userTransactions.map((txn) => (
-                <Fade in key={txn.id}>
+                <Fade in key={txn._id}>
                   <ListItem sx={{ py: 2 }}>
                     <ListItemAvatar>
                       <Avatar
@@ -75,7 +75,7 @@ const HistoryTab = ({ currentUserData, userTransactions, getRecipientName }) => 
                       }
                       secondary={
                         <>
-                          {formatDate(txn.timestamp)} •{" "}
+                          {formatDate(txn.createdAt)} •{" "}
                           {txn.isInternational ? (
                             <Stack direction="row" alignItems="center" spacing={0.5} component="span">
                               <InternationalIcon fontSize="small" />

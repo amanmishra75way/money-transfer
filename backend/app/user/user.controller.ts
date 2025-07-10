@@ -133,6 +133,14 @@ export const updateUserProfileHandler = asyncHandler(async (req: Request, res: R
   res.send(createResponse(updatedUser, "User profile updated successfully"));
 });
 
+/**
+ * Retrieves all users (admin only)
+ */
+export const getAllUsersHandler = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const users = await userService.getAllUsers();
+  res.send(createResponse(users, "Users retrieved successfully"));
+});
+
 export const refreshTokenHandler = async (req: Request, res: Response): Promise<void> => {
   const { refreshToken } = req.body; // Expect the refresh token in the request body
 

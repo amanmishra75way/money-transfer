@@ -34,7 +34,7 @@ export const createUser = async (userDto: CreateUserDto): Promise<IUser> => {
 /**
  * Logs in a user by validating credentials.
  * @param {LoginUserDto} loginDto - The data transfer object containing login credentials.
- * @returns {Promise<{ user: IUser; tokens: { accessToken: string; refreshToken: string } }>} 
+ * @returns {Promise<{ user: IUser; tokens: { accessToken: string; refreshToken: string } }>}
  * An object containing the user data and JWT tokens.
  * @throws {HttpError} Throws an error if the credentials are invalid.
  */
@@ -105,6 +105,13 @@ export const getUserById = async (userId: string): Promise<IUser | null> => {
 };
 
 /**
+ * Retrieves all users
+ */
+export const getAllUsers = async (): Promise<IUser[]> => {
+  return await UserModel.find({}, { password: 0, refreshToken: 0 }); // Exclude sensitive fields
+};
+
+/**
  * Logs out a user by invalidating their refresh token.
  * @param {string} refreshToken - The refresh token to invalidate.
  * @returns {Promise<void>} Resolves when the refresh token is invalidated.
@@ -113,16 +120,11 @@ export const logoutUser = async (refreshToken: string): Promise<void> => {
   await UserModel.findOneAndUpdate({ refreshToken }, { refreshToken: null });
 };
 
-
 export const updateResetToken = async (userId: string, resetToken: string | null): Promise<void> => {
   await UserModel.findByIdAndUpdate(userId, { resetToken });
 };
 
-export const changePassword = async (
-  userId: string,
-  currentPassword: string,
-  newPassword: string
-): Promise<void> => {
+export const changePassword = async (userId: string, currentPassword: string, newPassword: string): Promise<void> => {
   const user = await UserModel.findById(userId);
 
   if (!user) {

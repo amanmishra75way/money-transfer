@@ -4,8 +4,9 @@ import { Remove as WithdrawIcon, Pending as PendingIcon } from "@mui/icons-mater
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import { useRequestTransactionMutation } from "../../services/api";
 
-const WithdrawTab = ({ currentUserData, dispatch, requestTransaction }) => {
+const WithdrawTab = ({ currentUserData }) => {
   const withdrawSchema = yup.object().shape({
     amount: yup
       .number()
@@ -17,6 +18,7 @@ const WithdrawTab = ({ currentUserData, dispatch, requestTransaction }) => {
       }),
   });
 
+  const [requestTransaction] = useRequestTransactionMutation();
   const {
     register,
     handleSubmit,
@@ -32,19 +34,22 @@ const WithdrawTab = ({ currentUserData, dispatch, requestTransaction }) => {
 
   const formatCurrency = (amount) => `$${parseFloat(amount).toFixed(2)}`;
 
-  const handleWithdraw = (data) => {
-    const amount = parseFloat(data.amount);
-    dispatch(
-      requestTransaction({
+  const handleWithdraw = async (data) => {
+    try {
+      const amount = parseFloat(data.amount);
+      await requestTransaction({
         fromId: currentUserData.id,
         toId: "external",
         amount,
         type: "withdraw",
         isInternational: false,
-      })
-    );
-    reset();
-    alert("Withdrawal request submitted for admin approval!");
+      }).unwrap();
+      reset();
+      alert("Withdrawal request submitted for admin approval!");
+    } catch (error) {
+      console.error("Withdrawal failed:", error);
+      alert("Withdrawal failed: " + (error.data?.message || "Unknown error"));
+    }
   };
 
   return (

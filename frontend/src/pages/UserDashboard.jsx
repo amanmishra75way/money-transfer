@@ -1,12 +1,11 @@
 import React, { lazy, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { logout } from "../redux/userSlice";
-import { requestTransaction } from "../redux/txnSlice";
+import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { useMemo } from "react";
+import { useLogoutUserMutation, useGetUserProfileQuery, useGetUserTransactionsQuery } from "../services/api.js";
 
 // Lazy load components
 const OverviewTab = lazy(() => import("../Components/userComponents/OverviewTab.jsx"));
@@ -77,19 +76,20 @@ const withdrawSchema = yup.object().shape({
 });
 
 const UserDashboard = () => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const { currentUser, users } = useSelector((state) => state.user);
-  const { transactions } = useSelector((state) => state.txn);
-
+  const { users } = useSelector((state) => state.user);
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Get current user data from users array (to get updated balance)
-  const currentUserData = useMemo(() => {
-    return users.find((u) => u.id === currentUser?.id) || currentUser;
-  }, [users, currentUser]);
+  // RTK Query hooks
+  const { data: profileData } = useGetUserProfileQuery();
+  const { data: transactionsData } = useGetUserTransactionsQuery();
+  const [logoutUser] = useLogoutUserMutation();
+
+  // Get current user data
+  const currentUserData = profileData?.data || null;
+  const userTransactions = transactionsData?.data || [];
 
   // React Hook Form setup for each form
   const {
@@ -100,13 +100,14 @@ const UserDashboard = () => {
     reset: resetTransfer,
   } = useForm({
     resolver: yupResolver(transferSchema),
-    context: { currentUserData }, // Pass currentUserData for balance validation
+    context: { currentUserData },
     defaultValues: {
       recipientId: "",
       amount: "",
       isInternational: false,
     },
   });
+
   const {
     register: registerDeposit,
     handleSubmit: handleDepositSubmit,
@@ -126,7 +127,7 @@ const UserDashboard = () => {
     reset: resetWithdraw,
   } = useForm({
     resolver: yupResolver(withdrawSchema),
-    context: { currentUserData }, // Pass currentUserData for balance validation
+    context: { currentUserData },
     defaultValues: {
       amount: "",
     },
@@ -134,87 +135,24 @@ const UserDashboard = () => {
 
   const watchTransferFields = watchTransfer();
 
-  // Get user's transactions
-  const userTransactions = useMemo(() => {
-    return transactions.filter((txn) => txn.fromId === currentUserData?.id || txn.toId === currentUserData?.id);
-  }, [transactions, currentUserData?.id]);
-
-  const handleTransfer = (data) => {
-    const amount = parseFloat(data.amount);
-    const commission = data.isInternational ? amount * 0.1 : amount * 0.02;
-
-    dispatch(
-      requestTransaction({
-        fromId: currentUserData.id,
-        toId: data.recipientId,
-        amount,
-        type: "transfer",
-        isInternational: data.isInternational,
-      })
-    );
-
-    resetTransfer();
-    alert("Transfer request submitted for admin approval!");
-  };
-  const handleDeposit = (data) => {
-    const amount = parseFloat(data.amount);
-
-    dispatch(
-      requestTransaction({
-        fromId: "external",
-        toId: currentUserData.id,
-        amount,
-        type: "deposit",
-        isInternational: false,
-      })
-    );
-
-    resetDeposit();
-    alert("Deposit request submitted for admin approval!");
-  };
-
-  const handleWithdraw = (data) => {
-    const amount = parseFloat(data.amount);
-
-    dispatch(
-      requestTransaction({
-        fromId: currentUserData.id,
-        toId: "external",
-        amount,
-        type: "withdraw",
-        isInternational: false,
-      })
-    );
-
-    resetWithdraw();
-    alert("Withdrawal request submitted for admin approval!");
-  };
-
   const getRecipientName = (recipientId) => {
     if (recipientId === "external") return "External Account";
     const recipient = users.find((u) => u.id === recipientId);
     return recipient ? recipient.name : recipientId;
   };
 
-  const formatCurrency = (amount) => `$${amount.toFixed(2)}`;
+  const formatCurrency = (amount) => `$${amount?.toFixed(2) || "0.00"}`;
   const formatDate = (dateString) => new Date(dateString).toLocaleDateString();
 
-  // Calculate stats
-  const approvedTransactions = useMemo(() => {
-    return userTransactions.filter((txn) => txn.status === "approved");
-  }, [userTransactions]);
-
-  const pendingTransactions = useMemo(() => {
-    return userTransactions.filter((txn) => txn.status === "pending");
-  }, [userTransactions]);
-
-  const thisMonthTransactions = useMemo(() => {
-    const now = new Date();
-    return userTransactions.filter((txn) => {
-      const txnDate = new Date(txn.timestamp);
-      return txnDate.getMonth() === now.getMonth() && txnDate.getFullYear() === now.getFullYear();
-    });
-  }, [userTransactions]);
+  const handleLogout = async () => {
+    try {
+      await logoutUser().unwrap();
+      navigate("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      navigate("/");
+    }
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -230,24 +168,13 @@ const UserDashboard = () => {
         );
 
       case "transfer":
-        return (
-          <TransferTab
-            users={users}
-            currentUserData={currentUserData}
-            dispatch={dispatch}
-            requestTransaction={requestTransaction}
-          />
-        );
+        return <TransferTab users={users} currentUserData={currentUserData} />;
 
       case "deposit":
-        return (
-          <DepositTab currentUserData={currentUserData} dispatch={dispatch} requestTransaction={requestTransaction} />
-        );
+        return <DepositTab currentUserData={currentUserData} />;
 
       case "withdraw":
-        return (
-          <WithdrawTab currentUserData={currentUserData} dispatch={dispatch} requestTransaction={requestTransaction} />
-        );
+        return <WithdrawTab currentUserData={currentUserData} />;
 
       case "history":
         return (
@@ -313,18 +240,10 @@ const UserDashboard = () => {
                   Welcome, {currentUserData?.name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Balance: {formatCurrency(currentUserData?.balance || 0)}
+                  Balance: {formatCurrency(currentUserData?.balance)}
                 </Typography>
               </Stack>
-              <Button
-                variant="outlined"
-                color="error"
-                startIcon={<LogoutIcon />}
-                onClick={() => {
-                  dispatch(logout());
-                  navigate("/");
-                }}
-              >
+              <Button variant="outlined" color="error" startIcon={<LogoutIcon />} onClick={handleLogout}>
                 Logout
               </Button>
             </Stack>

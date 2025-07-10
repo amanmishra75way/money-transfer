@@ -275,6 +275,13 @@ export const api = createApi({
       },
     }),
 
+    getAllUsers: builder.query<{ data: User[]; message: string; success: boolean }, void>({
+      query: () => ({
+        url: "/users/admin/all",
+      }),
+      providesTags: ["User"],
+    }),
+
     getUserProfile: builder.query<ProfileResponse, void>({
       query: () => ({
         url: "/users/profile",
@@ -323,7 +330,7 @@ export const api = createApi({
     // ================================
     requestTransaction: builder.mutation<TransactionResponse, CreateTransactionRequest>({
       query: (transactionData) => ({
-        url: "/transactions/request",
+        url: "/transaction/request",
         method: "POST",
         body: transactionData,
       }),
@@ -332,21 +339,21 @@ export const api = createApi({
 
     getUserTransactions: builder.query<TransactionsResponse, void>({
       query: () => ({
-        url: "/transactions/my-transactions",
+        url: "/transaction/my-transactions",
       }),
       providesTags: ["Transaction"],
     }),
 
     getTransactionById: builder.query<TransactionResponse, string>({
       query: (id) => ({
-        url: `/transactions/${id}`,
+        url: `/transaction/${id}`,
       }),
       providesTags: (result, error, id) => [{ type: "Transaction", id }],
     }),
 
     getTransactionStats: builder.query<TransactionStatsResponse, void>({
       query: () => ({
-        url: "/transactions/stats",
+        url: "/transaction/stats",
       }),
       providesTags: ["Transaction"],
     }),
@@ -356,21 +363,21 @@ export const api = createApi({
     // ================================
     getAllTransactions: builder.query<TransactionsResponse, void>({
       query: () => ({
-        url: "/transactions/admin/all",
+        url: "/transaction/admin/all",
       }),
       providesTags: ["Transaction"],
     }),
 
     getPendingTransactions: builder.query<TransactionsResponse, void>({
       query: () => ({
-        url: "/transactions/admin/pending",
+        url: "/transaction/admin/pending",
       }),
       providesTags: ["Transaction"],
     }),
 
     approveTransaction: builder.mutation<TransactionResponse, { id: string } & ApproveTransactionRequest>({
       query: ({ id, ...data }) => ({
-        url: `/transactions/${id}/approve`,
+        url: `/transaction/${id}/approve`,
         method: "PUT",
         body: data,
       }),
@@ -398,6 +405,7 @@ export const {
   useLogoutUserMutation,
   useGetUserProfileQuery,
   useUpdateUserProfileMutation,
+  useGetAllUsersQuery,
 
   // Password management hooks
   useForgotPasswordMutation,

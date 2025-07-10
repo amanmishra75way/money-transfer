@@ -20,6 +20,7 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { CompareArrows as TransferIcon, Public as InternationalIcon } from "@mui/icons-material";
+import { useRequestTransactionMutation } from "../../services/api";
 
 const transferSchema = yup.object().shape({
   recipientId: yup.string().required("Recipient is required"),
@@ -39,7 +40,8 @@ const transferSchema = yup.object().shape({
   isInternational: yup.boolean(),
 });
 
-const TransferTab = ({ users, currentUserData, dispatch, requestTransaction }) => {
+const TransferTab = ({ users, currentUserData }) => {
+  const [requestTransaction] = useRequestTransactionMutation();
   const {
     register,
     handleSubmit,
@@ -60,19 +62,21 @@ const TransferTab = ({ users, currentUserData, dispatch, requestTransaction }) =
 
   const formatCurrency = (amount) => `$${parseFloat(amount).toFixed(2)}`;
 
-  const handleTransfer = (data) => {
-    const amount = parseFloat(data.amount);
-    dispatch(
-      requestTransaction({
-        fromId: currentUserData.id,
+  const handleTransfer = async (data) => {
+    try {
+      const amount = parseFloat(data.amount);
+      await requestTransaction({
         toId: data.recipientId,
         amount,
         type: "transfer",
         isInternational: data.isInternational,
-      })
-    );
-    reset();
-    alert("Transfer request submitted for admin approval!");
+      }).unwrap();
+      reset();
+      alert("Transfer request submitted for admin approval!");
+    } catch (error) {
+      console.error("Transfer failed:", error);
+      alert("Transfer failed: " + (error.data?.message || "Unknown error"));
+    }
   };
 
   return (

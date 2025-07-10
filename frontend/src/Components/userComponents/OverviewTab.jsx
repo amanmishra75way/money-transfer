@@ -28,7 +28,7 @@ const OverviewTab = ({ currentUserData, userTransactions, formatCurrency, format
   const approvedTransactions = userTransactions.filter((txn) => txn.status === "approved");
   const pendingTransactions = userTransactions.filter((txn) => txn.status === "pending");
   const thisMonthTransactions = userTransactions.filter((txn) => {
-    const date = new Date(txn.timestamp);
+    const date = new Date(txn.createdAt);
     const now = new Date();
     return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
   });
@@ -105,7 +105,7 @@ const OverviewTab = ({ currentUserData, userTransactions, formatCurrency, format
           {userTransactions.length > 0 ? (
             <List>
               {userTransactions.slice(0, 5).map((txn) => (
-                <Fade in key={txn.id}>
+                <Fade in key={txn._id}>
                   <ListItem sx={{ py: 2 }}>
                     <ListItemAvatar>
                       <Avatar
@@ -137,7 +137,7 @@ const OverviewTab = ({ currentUserData, userTransactions, formatCurrency, format
                           ? `To ${getRecipientName(txn.toId)}`
                           : `From ${getRecipientName(txn.fromId)}`
                       }
-                      secondary={formatDate(txn.timestamp)}
+                      secondary={formatDate(txn.createdAt)}
                     />
                     <ListItemSecondaryAction>
                       <Stack direction="row" alignItems="center" spacing={1}>
