@@ -1,0 +1,116 @@
+{
+  "name": "MoneyTransfer",
+  "short_name": "MoneyTransfer",
+  "description": "Secure money transfer platform with admin and user dashboards",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#667eea",
+  "theme_color": "#764ba2",
+  "icons": [
+    {
+      "src": "/icons/android/android-launchericon-72-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/android/android-launchericon-96-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/ios/128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/android/android-launchericon-144-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/ios/152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/android/android-launchericon-192-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/ios/256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/ios/512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/screenshot1.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "description": "Dashboard view showing transaction history"
+    },
+    {
+      "src": "/screenshots/screenshot2.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "description": "Money transfer form with amount input"
+    }
+  ],
+  "categories": ["finance", "business", "utilities"],
+  "shortcuts": [
+    {
+      "name": "New Transfer",
+      "short_name": "Transfer",
+      "description": "Send money to another user",
+      "url": "/dashboard?tab=transfer",
+      "icons": [
+        {
+          "src": "/icons/android/transfer.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Transaction History",
+      "short_name": "History",
+      "description": "View your transaction history",
+      "url": "/dashboard?tab=history",
+      "icons": [
+        {
+          "src": "/icons/android/history.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.example.moneytransfer",
+      "id": "com.example.moneytransfer"
+    },
+    {
+      "platform": "itunes",
+      "url": "https://apps.apple.com/app/moneytransfer/id123456789"
+    }
+  ],
+  "prefer_related_applications": false,
+  "features": ["Cross-platform", "Fast", "Secure Transactions", "User Dashboard", "Admin Panel"]
+}
