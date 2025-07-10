@@ -1,3 +1,4 @@
+// transaction.schema.ts
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface ITransaction extends Document {
@@ -11,6 +12,9 @@ export interface ITransaction extends Document {
   description?: string;
   processedBy?: string;
   processedAt?: Date;
+  remarks?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const TransactionSchema: Schema = new Schema<ITransaction>(
@@ -33,10 +37,12 @@ const TransactionSchema: Schema = new Schema<ITransaction>(
     description: { type: String, default: "" },
     processedBy: { type: String, ref: "User", default: null },
     processedAt: { type: Date, default: null },
+    remarks: { type: String, default: "" },
   },
   { timestamps: true }
 );
 
+// Pre-save hook to calculate commission
 TransactionSchema.pre("save", function (next) {
   if (this.isModified("amount") || this.isModified("isInternational")) {
     this.commission = this.isInternational ? 0.1 * this.amount : 0.02 * this.amount;

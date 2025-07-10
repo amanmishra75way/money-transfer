@@ -1,11 +1,13 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { loginFailure, loginSuccess, logout, registerFailure, registerSuccess } from "../redux/authReducer.jsx";
 
+// User interfaces
 interface User {
   id: string;
   name: string;
   email: string;
   role: string;
+  balance?: number;
 }
 
 interface LoginResponse {
@@ -38,6 +40,80 @@ interface LogoutResponse {
   data?: null;
   message: string;
   success?: boolean;
+}
+
+// Transaction interfaces
+interface Transaction {
+  _id: string;
+  fromId: string | User;
+  toId: string | User;
+  amount: number;
+  type: "transfer" | "deposit" | "withdrawal" | "payment";
+  status: "pending" | "approved" | "rejected" | "completed";
+  isInternational: boolean;
+  commission: number;
+  description?: string;
+  processedBy?: string | User;
+  processedAt?: string;
+  remarks?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface CreateTransactionRequest {
+  toId: string;
+  amount: number;
+  type: "transfer" | "deposit" | "withdrawal" | "payment";
+  description?: string;
+  isInternational?: boolean;
+}
+
+interface ApproveTransactionRequest {
+  status: "approved" | "rejected" | "completed";
+  remarks?: string;
+}
+
+interface TransactionResponse {
+  data: Transaction;
+  message: string;
+  success: boolean;
+}
+
+interface TransactionsResponse {
+  data: Transaction[];
+  message: string;
+  success: boolean;
+}
+
+interface TransactionStatsResponse {
+  data: Array<{
+    _id: string;
+    count: number;
+    totalAmount: number;
+  }>;
+  message: string;
+  success: boolean;
+}
+
+// Password reset interfaces
+interface ForgotPasswordRequest {
+  email: string;
+}
+
+interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+}
+
+interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+interface ApiResponse {
+  data?: any;
+  message: string;
+  success: boolean;
 }
 
 const baseQuery = fetchBaseQuery({
@@ -114,7 +190,11 @@ const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
 export const api = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithReauth,
+  tagTypes: ["User", "Transaction", "Profile"],
   endpoints: (builder) => ({
+    // ================================
+    // USER AUTHENTICATION ENDPOINTS
+    // ================================
     loginUser: builder.mutation<LoginResponse, { email: string; password: string }>({
       query: (credentials) => ({
         url: "/users/login",
@@ -139,6 +219,7 @@ export const api = createApi({
           dispatch(loginFailure("Login failed"));
         }
       },
+      invalidatesTags: ["User", "Profile"],
     }),
 
     registerUser: builder.mutation<RegisterResponse, { name: string; email: string; role: string; password: string }>({
@@ -165,6 +246,7 @@ export const api = createApi({
           dispatch(registerFailure("Registration failed"));
         }
       },
+      invalidatesTags: ["User", "Profile"],
     }),
 
     logoutUser: builder.mutation<LogoutResponse, void>({
@@ -181,8 +263,14 @@ export const api = createApi({
           await queryFulfilled;
           dispatch(logout());
           dispatch(api.util.resetApiState());
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
         } catch (error) {
           console.error("Logout failed:", error);
+          // Still clear local storage and logout on error
+          dispatch(logout());
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
         }
       },
     }),
@@ -191,8 +279,155 @@ export const api = createApi({
       query: () => ({
         url: "/users/profile",
       }),
+      providesTags: ["Profile"],
+    }),
+
+    updateUserProfile: builder.mutation<ProfileResponse, Partial<User>>({
+      query: (updateData) => ({
+        url: "/users/profile",
+        method: "PUT",
+        body: updateData,
+      }),
+      invalidatesTags: ["Profile", "User"],
+    }),
+
+    // ================================
+    // PASSWORD MANAGEMENT ENDPOINTS
+    // ================================
+    forgotPassword: builder.mutation<ApiResponse, ForgotPasswordRequest>({
+      query: (data) => ({
+        url: "/users/forgot-password",
+        method: "POST",
+        body: data,
+      }),
+    }),
+
+    resetPassword: builder.mutation<ApiResponse, ResetPasswordRequest>({
+      query: (data) => ({
+        url: "/users/reset-password",
+        method: "POST",
+        body: data,
+      }),
+    }),
+
+    changePassword: builder.mutation<ApiResponse, ChangePasswordRequest>({
+      query: (data) => ({
+        url: "/users/change-password",
+        method: "POST",
+        body: data,
+      }),
+    }),
+
+    // ================================
+    // TRANSACTION ENDPOINTS
+    // ================================
+    requestTransaction: builder.mutation<TransactionResponse, CreateTransactionRequest>({
+      query: (transactionData) => ({
+        url: "/transactions/request",
+        method: "POST",
+        body: transactionData,
+      }),
+      invalidatesTags: ["Transaction", "Profile"],
+    }),
+
+    getUserTransactions: builder.query<TransactionsResponse, void>({
+      query: () => ({
+        url: "/transactions/my-transactions",
+      }),
+      providesTags: ["Transaction"],
+    }),
+
+    getTransactionById: builder.query<TransactionResponse, string>({
+      query: (id) => ({
+        url: `/transactions/${id}`,
+      }),
+      providesTags: (result, error, id) => [{ type: "Transaction", id }],
+    }),
+
+    getTransactionStats: builder.query<TransactionStatsResponse, void>({
+      query: () => ({
+        url: "/transactions/stats",
+      }),
+      providesTags: ["Transaction"],
+    }),
+
+    // ================================
+    // ADMIN TRANSACTION ENDPOINTS
+    // ================================
+    getAllTransactions: builder.query<TransactionsResponse, void>({
+      query: () => ({
+        url: "/transactions/admin/all",
+      }),
+      providesTags: ["Transaction"],
+    }),
+
+    getPendingTransactions: builder.query<TransactionsResponse, void>({
+      query: () => ({
+        url: "/transactions/admin/pending",
+      }),
+      providesTags: ["Transaction"],
+    }),
+
+    approveTransaction: builder.mutation<TransactionResponse, { id: string } & ApproveTransactionRequest>({
+      query: ({ id, ...data }) => ({
+        url: `/transactions/${id}/approve`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["Transaction", "Profile"],
+    }),
+
+    // ================================
+    // REFRESH TOKEN ENDPOINT
+    // ================================
+    refreshToken: builder.mutation<{ accessToken: string; refreshToken: string }, { refreshToken: string }>({
+      query: (data) => ({
+        url: "/users/refresh-token",
+        method: "POST",
+        body: data,
+      }),
     }),
   }),
 });
 
-export const { useLoginUserMutation, useRegisterUserMutation, useGetUserProfileQuery, useLogoutUserMutation } = api;
+// Export hooks for all endpoints
+export const {
+  // Authentication hooks
+  useLoginUserMutation,
+  useRegisterUserMutation,
+  useLogoutUserMutation,
+  useGetUserProfileQuery,
+  useUpdateUserProfileMutation,
+
+  // Password management hooks
+  useForgotPasswordMutation,
+  useResetPasswordMutation,
+  useChangePasswordMutation,
+
+  // Transaction hooks
+  useRequestTransactionMutation,
+  useGetUserTransactionsQuery,
+  useGetTransactionByIdQuery,
+  useGetTransactionStatsQuery,
+
+  // Admin transaction hooks
+  useGetAllTransactionsQuery,
+  useGetPendingTransactionsQuery,
+  useApproveTransactionMutation,
+
+  // Utility hooks
+  useRefreshTokenMutation,
+} = api;
+
+// Export types for use in components
+export type {
+  User,
+  Transaction,
+  CreateTransactionRequest,
+  ApproveTransactionRequest,
+  LoginResponse,
+  RegisterResponse,
+  TransactionResponse,
+  TransactionsResponse,
+  TransactionStatsResponse,
+};
